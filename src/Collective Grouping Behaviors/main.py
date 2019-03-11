@@ -77,8 +77,8 @@ if __name__ == '__main__':
     env.gen_wall(0.02, seed=argv.random_seed)
     env.gen_agent(argv.agent_number)
 
-    # env.gen_pig(argv.pig_max_number)
-    # env.gen_rabbit(argv.rabbit_max_number)
+    env.gen_pig(argv.add_pig_number + argv.add_every)
+    env.gen_rabbit(argv.add_rabbit_number + argv.add_every)
 
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True

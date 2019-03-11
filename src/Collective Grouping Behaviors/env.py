@@ -64,6 +64,7 @@ class Env(object):
         self._init_property()
         self._init_group()
 
+
     def _init_property(self):
         self.property[-3] = [1, [0, 1, 0]]
         self.property[-2] = [1, [1, 0, 0]]

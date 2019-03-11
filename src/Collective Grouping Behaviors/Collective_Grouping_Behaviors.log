@@ -1,3 +1,0 @@
-Round	0	timestep	0	PigNum	0	group_num	1763	mean_size	2.211571	variance_size	0.255294	max_group_size	6	rabbitNum	0	View	66	number	1763	agent_num	10000	join_ratio	0.905500	leave_ratio	0.010400
-Round	0	timestep	1	PigNum	1	group_num	1760	mean_size	2.207955	variance_size	0.252209	max_group_size	6	rabbitNum	10	View	66	number	1760	agent_num	10030	join_ratio	0.027617	leave_ratio	0.011466
-Round	0	timestep	2	PigNum	2	group_num	2292	mean_size	2.325044	variance_size	0.388675	max_group_size	7	rabbitNum	19	View	66	number	2292	agent_num	10060	join_ratio	0.911133	leave_ratio	0.010636
