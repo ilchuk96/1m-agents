@@ -180,17 +180,17 @@ if __name__ == '__main__':
             # log_largest_group.write('\t'.join(pos_info) + '\n')
             # log_largest_group.flush()
 
-            # if argv.pig_increase_policy == 0:
-            #     if cur_pig_num < argv.pig_min_number:
-            #         env.gen_pig(argv.pig_max_number - cur_pig_num)
-            # elif argv.pig_increase_policy == 1:
-            #     if t % argv.pig_increase_every == 0:
-            #         env.gen_pig(max(1, int(env.get_pig_num() * argv.pig_increase_rate)))
-            # elif argv.pig_increase_policy == 2:
-            #     env.gen_pig(10)
-            #
-            # env.gen_rabbit(max(10, int(env.get_rabbit_num() * argv.rabbit_increase_rate)))
-            # env.grow_agent(max(1, int(env.get_agent_num() * argv.agent_increase_rate)))
+            if argv.pig_increase_policy == 0:
+                if cur_pig_num < argv.pig_min_number:
+                    env.gen_pig(argv.pig_max_number - cur_pig_num)
+            elif argv.pig_increase_policy == 1:
+                if t % argv.pig_increase_every == 0:
+                    env.gen_pig(max(1, int(env.get_pig_num() * argv.pig_increase_rate)))
+            elif argv.pig_increase_policy == 2:
+                env.gen_pig(10)
+
+            env.gen_rabbit(max(10, int(env.get_rabbit_num() * argv.rabbit_increase_rate)))
+            env.grow_agent(max(1, int(env.get_agent_num() * argv.agent_increase_rate)))
 
             # if (r * argv.time_step + t) % argv.add_every == 0:
             #     if flip:
@@ -199,14 +199,14 @@ if __name__ == '__main__':
             #         env.gen_rabbit(argv.add_rabbit_number)
             #     flip ^= 1
 
-            if flip:
-                if env.get_rabbit_num() < 1000:
-                    env.gen_pig(argv.pig_max_number - env.get_pig_num())
-                    flip ^= 1
-            else:
-                if env.get_pig_num() < 2000:
-                    env.gen_rabbit(argv.rabbit_max_number - env.get_rabbit_num())
-                    flip ^= 1
+            # if flip:
+            #     if env.get_rabbit_num() < 1000:
+            #         env.gen_pig(argv.pig_max_number - env.get_pig_num())
+            #         flip ^= 1
+            # else:
+            #     if env.get_pig_num() < 2000:
+            #         env.gen_rabbit(argv.rabbit_max_number - env.get_rabbit_num())
+            #         flip ^= 1
 
         if argv.save_every_round and r % argv.save_every_round == 0:
             if not os.path.exists(os.path.join(argv.save_dir, "round_%d" % r)):
