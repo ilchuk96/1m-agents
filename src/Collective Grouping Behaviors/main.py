@@ -139,8 +139,8 @@ if __name__ == '__main__':
                         maxQ_batches=maxQ_batches,
                         learning_rate=argv.learning_rate)
 
-            # dead_list = env.remove_dead_people()
-            # model.remove_dead_agent_emb(dead_list)  # remove agent embeddings
+            dead_list = env.remove_dead_people()
+            model.remove_dead_agent_emb(dead_list)  # remove agent embeddings
 
             cur_pig_num = env.get_pig_num()
             cur_rabbit_num = env.get_rabbit_num()
@@ -189,7 +189,7 @@ if __name__ == '__main__':
             elif argv.pig_increase_policy == 2:
                 env.gen_pig(10)
 
-            env.gen_rabbit(max(10, int(env.get_rabbit_num() * argv.rabbit_increase_rate)))
+            # env.gen_rabbit(max(10, int(env.get_rabbit_num() * argv.rabbit_increase_rate)))
             env.grow_agent(max(1, int(env.get_agent_num() * argv.agent_increase_rate)))
 
             # if (r * argv.time_step + t) % argv.add_every == 0:

@@ -395,16 +395,16 @@ class Env(object):
 
     def increase_health(self, rewards):
         for id in rewards:
-            self.health[id] += 12. * rewards[id]
+            # self.health[id] += 12. * rewards[id]
 
             # if rewards[id] > 0.2:
             #     self.health[id] = 1.
             # elif rewards > 0:
             #     self.health[id] += rewards[id]
 
-            # self.health[id] += rewards[id]
-            # if self.health[id] > 1.0:
-            #     self.health[id] = 1.0
+            self.health[id] += rewards[id]
+            if self.health[id] > 1.0:
+                self.health[id] = 1.0
 
     def group_monitor(self):
         """
