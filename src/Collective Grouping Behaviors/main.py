@@ -6,6 +6,7 @@ import tensorflow as tf
 import os
 import shutil
 import time
+from collections import deque
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(sys.argv[0])
@@ -100,6 +101,8 @@ if __name__ == '__main__':
 
     log = open(argv.log_file, 'w')
     log_largest_group = open('log_largest_group.txt', 'w')
+    prev_sum_reward = deque()
+    prev_num_agents = deque()
     for r in xrange(argv.round):
         video_flag = False
         if argv.video_per_round > 0 and r % argv.video_per_round == 0:
@@ -128,6 +131,14 @@ if __name__ == '__main__':
 
             rewards = get_reward(env)  # r, a dictionary
             rewards = get_fine(env, rewards)  # get fines here
+
+            if len(prev_num_agents) == 100:
+                prev_num_agents.popleft()
+                prev_sum_reward.popleft()
+            prev_num_agents.append(env.agent_num)
+            prev_sum_reward.append(sum(rewards.values()))
+            aver_reward = sum(prev_sum_reward) / sum(prev_num_agents)
+
             global_reward = sum(rewards.values()) / env.agent_num  # reward
             # for fine-agent is average reward
 
@@ -149,8 +160,8 @@ if __name__ == '__main__':
             cur_pig_num = env.get_pig_num()
             cur_rabbit_num = env.get_rabbit_num()
             group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
-            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tvariance_size\t%f\tmax_group_size\t%d\trabbitNum\t%d' % \
-                   (r, t, cur_pig_num, group_num, mean_size, variance_size, max_size, cur_rabbit_num)
+            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tvariance_size\t%f\tmax_group_size\t%d\taverage_reward\t%f' % \
+                   (r, t, cur_pig_num, group_num, mean_size, variance_size, max_size, aver_reward)
             if group_view_num is not None:
                 for k in group_view_num:
                     x = map(int, k[1:-1].split(','))
