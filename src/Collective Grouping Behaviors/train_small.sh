@@ -39,7 +39,7 @@ save_dir=models
 load_dir=None
 
 video_dir=videos
-video_per_round=1
+video_per_round=0
 round=25
 time_step=500
 policy=e_greedy

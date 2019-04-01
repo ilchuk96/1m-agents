@@ -1,5 +1,5 @@
 import sys
-from env import Env, get_view, get_reward
+from env import Env, get_view, get_reward, get_fine
 from Model import Model_DNN
 import argparse
 import tensorflow as tf
@@ -127,6 +127,10 @@ if __name__ == '__main__':
                 env.dump_image(os.path.join(img_dir, '%d.png' % (t + 1)))
 
             rewards = get_reward(env)  # r, a dictionary
+            rewards = get_fine(env, rewards)  # get fines here
+            global_reward = sum(rewards.values()) / env.agent_num  # reward
+            # for fine-agent is average reward
+
             env.increase_health(rewards)
 
             new_view_batches = get_view(env)  # s'

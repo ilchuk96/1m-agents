@@ -1007,3 +1007,22 @@ def _get_view(pos):
         print "Error Face!!!"
     assert cur_pos == (2 * max_range_l + 1) * (max_range_f + 1)
     return single_view.reshape(-1), env_ally, env_map[x][y]
+
+
+def get_fine(env, rewards):
+    global env_id_group
+
+    for id, group in env_id_group.items():
+        size = 0
+        try:
+            size = len(group)
+        except:
+            continue
+        min_group_size = 3
+        max_group_size = 5
+        fine_size = 0.95
+        if size < min_group_size or max_group_size < size:
+            if id in rewards.keys():
+                rewards[id] *= fine_size
+
+    return rewards
