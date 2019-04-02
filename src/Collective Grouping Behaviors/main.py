@@ -1,11 +1,13 @@
 import sys
 from env import Env, get_view, get_reward, get_fine
 from Model import Model_DNN
+from Fine_Model import Fine_Model_DNN
 import argparse
 import tensorflow as tf
 import os
 import shutil
-import time
+from collections import deque
+import numpy as np
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(sys.argv[0])
@@ -62,6 +64,7 @@ if __name__ == '__main__':
     argparser.add_argument('--agent_number', type=int, default=100)
     argparser.add_argument('--learning_rate', type=float, default=0.001)
     argparser.add_argument('--log_file', type=str, default='log.txt')
+    argparser.add_argument('--fine_num_actions', type=int, default=3)
     argv = argparser.parse_args()
 
     argv.model_hidden_size = [int(x) for x in argv.model_hidden_size.split(',')]
@@ -72,6 +75,7 @@ if __name__ == '__main__':
 
     env = Env(argv)
     model = Model_DNN(argv)
+    fine_model = Fine_Model_DNN(argv)
 
     # Environment Initialization
     env.gen_wall(0.02, seed=argv.random_seed)
@@ -100,6 +104,11 @@ if __name__ == '__main__':
 
     log = open(argv.log_file, 'w')
     log_largest_group = open('log_largest_group.txt', 'w')
+
+    prev_sum_reward = deque()
+    prev_num_agents = deque()
+    prev_pig_num = deque()
+
     for r in xrange(argv.round):
         video_flag = False
         if argv.video_per_round > 0 and r % argv.video_per_round == 0:
@@ -128,8 +137,29 @@ if __name__ == '__main__':
 
             rewards = get_reward(env)  # r, a dictionary
             rewards = get_fine(env, rewards)  # get fines here
+
+            if len(prev_num_agents) == 50:
+                prev_num_agents.popleft()
+                prev_sum_reward.popleft()
+                prev_pig_num.popleft()
+            prev_num_agents.append(env.agent_num)
+            prev_sum_reward.append(sum(rewards.values()))
+            cur_pig_num = env.get_pig_num()
+            prev_pig_num.append(cur_pig_num)
+
+            aver_reward = sum(prev_sum_reward) / sum(prev_num_agents)
+
             global_reward = sum(rewards.values()) / env.agent_num  # reward
             # for fine-agent is average reward
+
+            if t % 50 == 0 and len(prev_pig_num) == 50:
+                s = list(prev_num_agents) + list(prev_pig_num) + list(prev_sum_reward)
+                print len(s)
+                a = int(np.argmax(Q[s, :] + np.random.randn(1, 3) * (1. / (r + 1)))) % 3
+                env.take_fine_action(a)
+                if was_prev:
+                    Q[prev_state, a] = Q[prev_state, a] + 0.9 * (r + 0.95 * np.max(Q[s, :]) - Q[prev_state, a])
+                prev_state = s
 
             env.increase_health(rewards)
 
@@ -143,14 +173,15 @@ if __name__ == '__main__':
                         maxQ_batches=maxQ_batches,
                         learning_rate=argv.learning_rate)
 
+
             dead_list = env.remove_dead_people()
             model.remove_dead_agent_emb(dead_list)  # remove agent embeddings
 
-            cur_pig_num = env.get_pig_num()
+
             cur_rabbit_num = env.get_rabbit_num()
-            group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
-            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tvariance_size\t%f\tmax_group_size\t%d\trabbitNum\t%d' % \
-                   (r, t, cur_pig_num, group_num, mean_size, variance_size, max_size, cur_rabbit_num)
+            group_num, mean_size, variance_size, max_size, group_view_num, fine_size = env.group_monitor()
+            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tvariance_size\t%f\tmax_group_size\t%d\tfine_size\t%f\taverage_reward\t%f' % \
+                   (r, t, cur_pig_num, group_num, mean_size, variance_size, max_size, fine_size, aver_reward)
             if group_view_num is not None:
                 for k in group_view_num:
                     x = map(int, k[1:-1].split(','))

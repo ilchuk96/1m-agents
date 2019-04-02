@@ -64,6 +64,8 @@ class Env(object):
         self._init_property()
         self._init_group()
 
+        self.env_fine_size = 0.05
+
 
     def _init_property(self):
         self.property[-3] = [1, [0, 1, 0]]
@@ -451,9 +453,9 @@ class Env(object):
 
         if len(group_sizes) > 0:
             return len(group_sizes), group_sizes.mean(), group_sizes.var(), np.max(
-                group_sizes), group_view_num
+                group_sizes), group_view_num, self.env_fine_size
         else:
-            return 0, 0, 0, 0, None
+            return 0, 0, 0, 0, None, None
 
     def track_largest_group(self, time_step, update_largest_every):
         if time_step % update_largest_every == 0 or (self.group_ids[self.largest_group] is None):
@@ -616,6 +618,16 @@ class Env(object):
                             img[i * length + m][j * length + n] = 255 * np.array(self.property[id][1])
         output_img = Image.fromarray(img, 'RGB')
         output_img.save(img_name)
+
+    def take_fine_action(self, action):
+        if action == 0:
+            pass
+        elif action == 1:
+            if self.env_fine_size < 0.1:
+                self.env_fine_size += 0.01
+        elif action == 2:
+            if self.env_fine_size > 0.0:
+                self.env_fine_size -= 0.01
 
 
 def _get_reward_pig(pos):
@@ -1011,6 +1023,7 @@ def _get_view(pos):
 
 def get_fine(env, rewards):
     global env_id_group
+    global env_fine_size
 
     for id, group in env_id_group.items():
         size = 0
@@ -1020,11 +1033,10 @@ def get_fine(env, rewards):
             continue
         min_group_size = 3
         max_group_size = 5
-        fine_size = 0.01
         if size < min_group_size or max_group_size < size:
             if id in rewards.keys():
-                rewards[id] -= fine_size
+                rewards[id] -= env_fine_size
             else:
-                rewards[id] = -fine_size
+                rewards[id] = -env_fine_size
 
     return rewards
