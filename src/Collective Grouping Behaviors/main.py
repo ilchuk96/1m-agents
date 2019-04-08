@@ -71,15 +71,7 @@ if __name__ == '__main__':
     if argv.load_dir == 'None':
         argv.load_dir = None
 
-    env = Env(argv)
     model = Model_DNN(argv)
-
-    # Environment Initialization
-    env.gen_wall(0.02, seed=argv.random_seed)
-    env.gen_agent(argv.agent_number)
-
-    env.gen_pig(argv.add_pig_number + argv.add_every)
-    env.gen_rabbit(argv.add_rabbit_number + argv.add_every)
 
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
@@ -97,12 +89,8 @@ if __name__ == '__main__':
     if not os.path.exists(argv.save_dir):
         os.mkdir(argv.save_dir)
 
-    flip = 0
-
     log = open(argv.log_file, 'w')
     log_largest_group = open('log_largest_group.txt', 'w')
-    prev_sum_reward = deque()
-    prev_num_agents = deque()
     for r in xrange(argv.round):
         video_flag = False
         if argv.video_per_round > 0 and r % argv.video_per_round == 0:
@@ -114,8 +102,11 @@ if __name__ == '__main__':
                 shutil.rmtree(img_dir)
                 os.makedirs(img_dir)
 
-        env.grow_agent(argv.agent_number - env.get_agent_num())
-        env.gen_pig(argv.add_pig_number - env.get_pig_num())
+        env = Env(argv)
+        # Environment Initialization
+        env.gen_wall(0.02, seed=argv.random_seed)
+        env.gen_agent(argv.agent_number)
+        env.gen_pig(argv.add_pig_number)
 
         for t in xrange(argv.time_step):
             if t == 0 and video_flag:
@@ -134,17 +125,7 @@ if __name__ == '__main__':
                 env.dump_image(os.path.join(img_dir, '%d.png' % (t + 1)))
 
             rewards = get_reward(env)  # r, a dictionary
-            rewards = get_fine(env, rewards)  # get fines here
-
-            if len(prev_num_agents) == 100:
-                prev_num_agents.popleft()
-                prev_sum_reward.popleft()
-            prev_num_agents.append(env.agent_num)
-            prev_sum_reward.append(sum(rewards.values()))
-            aver_reward = sum(prev_sum_reward) / sum(prev_num_agents)
-
-            global_reward = sum(rewards.values()) / env.agent_num  # reward
-            # for fine-agent is average reward
+            # rewards = get_fine(env, rewards)  # get fines here
 
             env.increase_health(rewards)
 

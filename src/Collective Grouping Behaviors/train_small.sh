@@ -44,7 +44,7 @@ round=100
 time_step=150
 policy=e_greedy
 epsilon=0.1
-agent_number=1000
+agent_number=250
 learning_rate=0.001
 log_file=Collective_Grouping_Behaviors.log
 
