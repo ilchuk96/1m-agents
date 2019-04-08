@@ -1012,12 +1012,12 @@ def _get_view(pos):
 def get_fine(env, rewards):
     global env_id_group
 
+    env_id_group = env.id_group
+
     for id, group in env_id_group.items():
         size = 0
-        try:
+        if not isinstance(group, int):
             size = len(group)
-        except:
-            continue
         min_group_size = 3
         max_group_size = 5
         fine_size = 0.01
