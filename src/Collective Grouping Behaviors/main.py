@@ -125,7 +125,7 @@ if __name__ == '__main__':
                 env.dump_image(os.path.join(img_dir, '%d.png' % (t + 1)))
 
             rewards = get_reward(env)  # r, a dictionary
-            # rewards = get_fine(env, rewards)  # get fines here
+            rewards = get_fine(env, rewards)  # get fines here
 
             env.increase_health(rewards)
 
