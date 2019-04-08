@@ -113,6 +113,10 @@ if __name__ == '__main__':
             except:
                 shutil.rmtree(img_dir)
                 os.makedirs(img_dir)
+
+        env.grow_agent(argv.agent_number - env.get_agent_num())
+        env.gen_pig(argv.add_pig_number - env.get_pig_num())
+
         for t in xrange(argv.time_step):
             if t == 0 and video_flag:
                 env.dump_image(os.path.join(img_dir, '%d.png' % t))
@@ -160,68 +164,14 @@ if __name__ == '__main__':
             cur_pig_num = env.get_pig_num()
             cur_rabbit_num = env.get_rabbit_num()
             group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
-            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tvariance_size\t%f\tmax_group_size\t%d\taverage_reward\t%f' % \
-                   (r, t, cur_pig_num, group_num, mean_size, variance_size, max_size, aver_reward)
-            if group_view_num is not None:
-                for k in group_view_num:
-                    x = map(int, k[1:-1].split(','))
-                    group_view_info = '\tView\t%d\tnumber\t%d' % (
-                        (2 * x[0] + 1) * (x[1] + 1), group_view_num[k])
-                    info += group_view_info
-                    print group_view_info
+            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tmax_group_size\t%d' % \
+                   (r, t, cur_pig_num, group_num, mean_size, max_size)
             info += '\tagent_num\t%d' % env.get_agent_num()
-
-            join_num = 0
-            leave_num = 0
-            for item in actions:
-                if item[1] == 7:
-                    join_num += 1
-                elif item[1] == 8:
-                    leave_num += 1
-            join_num = 1.0 * join_num / len(actions)
-            leave_num = 1.0 * leave_num / len(actions)
-            info += '\tjoin_ratio\t%f\tleave_ratio\t%f' % (join_num, leave_num)
 
             print info
 
-            # print 'average degroup number:\t', avg_degroup
             log.write(info + '\n')
             log.flush()
-
-            # largest_group_pos = env.track_largest_group(time_step=r * argv.round + t, update_largest_every=200)
-            # pos_info = []
-            # for item in largest_group_pos:
-            #     pos_info.append(str(item[0]) + ',' + str(item[1]))
-            # log_largest_group.write('\t'.join(pos_info) + '\n')
-            # log_largest_group.flush()
-
-            if argv.pig_increase_policy == 0:
-                if cur_pig_num < argv.pig_min_number:
-                    env.gen_pig(argv.pig_max_number - cur_pig_num)
-            elif argv.pig_increase_policy == 1:
-                if t % argv.pig_increase_every == 0:
-                    env.gen_pig(max(1, int(env.get_pig_num() * argv.pig_increase_rate)))
-            elif argv.pig_increase_policy == 2:
-                env.gen_pig(10)
-
-            # env.gen_rabbit(max(10, int(env.get_rabbit_num() * argv.rabbit_increase_rate)))
-            env.grow_agent(max(1, int(env.get_agent_num() * argv.agent_increase_rate)))
-
-            # if (r * argv.time_step + t) % argv.add_every == 0:
-            #     if flip:
-            #         env.gen_pig(argv.add_pig_number)
-            #     else:
-            #         env.gen_rabbit(argv.add_rabbit_number)
-            #     flip ^= 1
-
-            # if flip:
-            #     if env.get_rabbit_num() < 1000:
-            #         env.gen_pig(argv.pig_max_number - env.get_pig_num())
-            #         flip ^= 1
-            # else:
-            #     if env.get_pig_num() < 2000:
-            #         env.gen_rabbit(argv.rabbit_max_number - env.get_rabbit_num())
-            #         flip ^= 1
 
         if argv.save_every_round and r % argv.save_every_round == 0:
             if not os.path.exists(os.path.join(argv.save_dir, "round_%d" % r)):

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-add_pig_number=100
+add_pig_number=1000
 add_rabbit_number=0
 add_every=0
 
@@ -26,7 +26,7 @@ images_dir=images
 agent_mortal=1
 agent_emb_dim=5
 agent_id=1
-damage_per_step=0.005
+damage_per_step=0.01
 
 model_name=DNN
 model_hidden_size=32,32
@@ -41,7 +41,7 @@ load_dir=None
 video_dir=videos
 video_per_round=0
 round=100
-time_step=1000
+time_step=150
 policy=e_greedy
 epsilon=0.1
 agent_number=1000
