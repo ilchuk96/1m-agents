@@ -1,12 +1,12 @@
 import sys
 from env import Env, get_view, get_reward, get_fine
 from Model import Model_DNN
+from Fine_Model import Fine_Model
 import argparse
 import tensorflow as tf
 import os
 import shutil
 import time
-from collections import deque
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(sys.argv[0])
@@ -73,6 +73,13 @@ if __name__ == '__main__':
 
     model = Model_DNN(argv)
 
+    fine_size = 0.005
+    fine_argv = argparser.parse_args()
+    fine_argv.num_actions = 3
+    fine_argv.fine_size = fine_size
+    fine_argv.model_hidden_size = '2,2'
+    other_model = Fine_Model(argv)
+
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     sess = tf.Session(config=config)
@@ -102,7 +109,8 @@ if __name__ == '__main__':
                 shutil.rmtree(img_dir)
                 os.makedirs(img_dir)
 
-        env = Env(argv)
+        fine_argv.fine_size = fine_size
+        env = Env(fine_argv)
         # Environment Initialization
         env.gen_wall(0.02, seed=argv.random_seed)
         env.gen_agent(argv.agent_number)
@@ -145,8 +153,8 @@ if __name__ == '__main__':
             cur_pig_num = env.get_pig_num()
             cur_rabbit_num = env.get_rabbit_num()
             group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
-            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tmax_group_size\t%d' % \
-                   (r, t, cur_pig_num, group_num, mean_size, max_size)
+            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tmax_group_size\t%d\tfine_size\t%f' % \
+                   (r, t, cur_pig_num, group_num, mean_size, max_size, fine_size)
             info += '\tagent_num\t%d' % env.get_agent_num()
 
             print info
@@ -160,7 +168,21 @@ if __name__ == '__main__':
             model_path = os.path.join(argv.save_dir, "round_%d" % r, "model.ckpt")
             model.save(sess, model_path)
             print 'model saved into ' + model_path
-        if video_flag:
-            images = [os.path.join(img_dir, ("%d.png" % i)) for i in range(argv.time_step + 1)]
-            env.make_video(images=images, outvid=os.path.join(argv.video_dir, "%d.avi" % r))
+
+        fine_reward = argv.add_pig_number - 2*cur_pig_num
+        view_batches = [cur_pig_num, env.get_agent_num(), fine_size]
+        actions, actions_batches = other_model.infer_actions(sess, view_batches, policy=argv.policy,
+                                                             epsilon=argv.epsilon)  # a
+        maxQ_batches = actions_batches
+
+        env.fine_act(actions[0])
+        fine_size = env.get_fine_size()
+
+        other_model.train(sess=sess,
+                          view_batches=view_batches,
+                          actions_batches=actions_batches,
+                          rewards=[fine_reward],
+                          maxQ_batches=maxQ_batches,
+                          learning_rate=argv.learning_rate)
+
     log.close()

@@ -64,6 +64,8 @@ class Env(object):
         self._init_property()
         self._init_group()
 
+        self.fine_size = args.fine_size
+
 
     def _init_property(self):
         self.property[-3] = [1, [0, 1, 0]]
@@ -90,7 +92,7 @@ class Env(object):
             return view_size1 if view_size_area1 < view_size_area2 else view_size2
 
         cur = 0
-        for k in self.view_args:
+        for k in self.view_args.split(','):
             k = [int(x) for x in k.split('-')]
             assert len(k) == 4
 
@@ -221,6 +223,17 @@ class Env(object):
 
     def get_agent_num(self):
         return self.agent_num
+
+    def get_fine_size(self):
+        return self.fine_size
+
+    def fine_act(self, action):
+        if action == 0 and self.fine_size > 0:
+            self.fine_size -= 0.0001
+        if action == 1:
+            pass
+        if action == 2 and self.fine_size < 0.1:
+            self.fine_size += 0.0001
 
     def _agent_act(self, x, y, face, action, id):
 
@@ -395,13 +408,6 @@ class Env(object):
 
     def increase_health(self, rewards):
         for id in rewards:
-            # self.health[id] += 12. * rewards[id]
-
-            # if rewards[id] > 0.2:
-            #     self.health[id] = 1.
-            # elif rewards > 0:
-            #     self.health[id] += rewards[id]
-
             self.health[id] += rewards[id]
             if self.health[id] > 1.0:
                 self.health[id] = 1.0
@@ -1011,8 +1017,10 @@ def _get_view(pos):
 
 def get_fine(env, rewards):
     global env_id_group
+    global env_fine_size
 
     env_id_group = env.id_group
+    env_fine_size = env.fine_size
 
     for id, group in env_id_group.items():
         size = 0
@@ -1020,11 +1028,10 @@ def get_fine(env, rewards):
             size = len(group)
         min_group_size = 3
         max_group_size = 5
-        fine_size = 0.005
         if size < min_group_size or max_group_size < size:
             if id in rewards.keys():
-                rewards[id] -= fine_size
+                rewards[id] -= env_fine_size
             else:
-                rewards[id] = -fine_size
+                rewards[id] = -env_fine_size
 
     return rewards
