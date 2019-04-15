@@ -1020,7 +1020,7 @@ def get_fine(env, rewards):
             size = len(group)
         min_group_size = 3
         max_group_size = 5
-        fine_size = 0.005
+        fine_size = 0.0025
         if size < min_group_size or max_group_size < size:
             if id in rewards.keys():
                 rewards[id] -= fine_size
