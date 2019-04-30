@@ -40,7 +40,7 @@ load_dir=None
 
 video_dir=videos
 video_per_round=0
-round=100
+round=50
 time_step=150
 policy=e_greedy
 epsilon=0.1

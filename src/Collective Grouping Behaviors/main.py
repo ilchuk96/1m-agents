@@ -89,78 +89,79 @@ if __name__ == '__main__':
     if not os.path.exists(argv.save_dir):
         os.mkdir(argv.save_dir)
 
-    log = open(argv.log_file, 'w')
-    log_largest_group = open('log_largest_group.txt', 'w')
-    for r in xrange(argv.round):
-        video_flag = False
-        if argv.video_per_round > 0 and r % argv.video_per_round == 0:
-            video_flag = True
-            img_dir = os.path.join(argv.images_dir, str(r))
-            try:
-                os.makedirs(img_dir)
-            except:
-                shutil.rmtree(img_dir)
-                os.makedirs(img_dir)
+    for fine_size in [0, 0.00005, 0.0001, 0.00015, 0.0002, 0.0003, 0.0004, 0.0005, 0.001, 0.002, 0.005, 0.01]:
+        log = open('Collective_Grouping_Behaviors_fine_size_' + str(fine_size), 'w')
+        log_largest_group = open('log_largest_group.txt', 'w')
+        for r in xrange(argv.round):
+            video_flag = False
+            if argv.video_per_round > 0 and r % argv.video_per_round == 0:
+                video_flag = True
+                img_dir = os.path.join(argv.images_dir, str(r))
+                try:
+                    os.makedirs(img_dir)
+                except:
+                    shutil.rmtree(img_dir)
+                    os.makedirs(img_dir)
 
-        env = Env(argv)
-        # Environment Initialization
-        env.gen_wall(0.02, seed=argv.random_seed)
-        env.gen_agent(argv.agent_number)
-        env.gen_pig(argv.add_pig_number)
+            env = Env(argv, fine_size)
+            # Environment Initialization
+            env.gen_wall(0.02, seed=argv.random_seed)
+            env.gen_agent(argv.agent_number)
+            env.gen_pig(argv.add_pig_number)
 
-        for t in xrange(argv.time_step):
-            if t == 0 and video_flag:
-                env.dump_image(os.path.join(img_dir, '%d.png' % t))
+            for t in xrange(argv.time_step):
+                if t == 0 and video_flag:
+                    env.dump_image(os.path.join(img_dir, '%d.png' % t))
 
-            view_batches = get_view(env)  # s
-            actions, actions_batches = model.infer_actions(sess, view_batches, policy=argv.policy,
-                                                           epsilon=argv.epsilon)  # a
+                view_batches = get_view(env)  # s
+                actions, actions_batches = model.infer_actions(sess, view_batches, policy=argv.policy,
+                                                               epsilon=argv.epsilon)  # a
 
-            env.take_action(actions)
-            env.decrease_health()
-            env.update_pig_pos()
-            env.update_rabbit_pos()
+                env.take_action(actions)
+                env.decrease_health()
+                env.update_pig_pos()
+                env.update_rabbit_pos()
 
+                if video_flag:
+                    env.dump_image(os.path.join(img_dir, '%d.png' % (t + 1)))
+
+                rewards = get_reward(env)  # r, a dictionary
+                rewards = get_fine(env, rewards)  # get fines here
+
+                env.increase_health(rewards)
+
+                new_view_batches = get_view(env)  # s'
+                maxQ_batches = model.infer_max_action_values(sess, new_view_batches)
+
+                model.train(sess=sess,
+                            view_batches=view_batches,
+                            actions_batches=actions_batches,
+                            rewards=rewards,
+                            maxQ_batches=maxQ_batches,
+                            learning_rate=argv.learning_rate)
+
+                dead_list = env.remove_dead_people()
+                model.remove_dead_agent_emb(dead_list)  # remove agent embeddings
+
+                cur_pig_num = env.get_pig_num()
+                cur_rabbit_num = env.get_rabbit_num()
+                group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
+                info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tmax_group_size\t%d' % \
+                       (r, t, cur_pig_num, group_num, mean_size, max_size)
+                info += '\tagent_num\t%d' % env.get_agent_num()
+
+                print info
+
+                log.write(info + '\n')
+                log.flush()
+
+            if argv.save_every_round and r % argv.save_every_round == 0:
+                if not os.path.exists(os.path.join(argv.save_dir, "round_%d" % r)):
+                    os.mkdir(os.path.join(argv.save_dir, "round_%d" % r))
+                model_path = os.path.join(argv.save_dir, "round_%d" % r, "model.ckpt")
+                model.save(sess, model_path)
+                print 'model saved into ' + model_path
             if video_flag:
-                env.dump_image(os.path.join(img_dir, '%d.png' % (t + 1)))
-
-            rewards = get_reward(env)  # r, a dictionary
-            rewards = get_fine(env, rewards)  # get fines here
-
-            env.increase_health(rewards)
-
-            new_view_batches = get_view(env)  # s'
-            maxQ_batches = model.infer_max_action_values(sess, new_view_batches)
-
-            model.train(sess=sess,
-                        view_batches=view_batches,
-                        actions_batches=actions_batches,
-                        rewards=rewards,
-                        maxQ_batches=maxQ_batches,
-                        learning_rate=argv.learning_rate)
-
-            dead_list = env.remove_dead_people()
-            model.remove_dead_agent_emb(dead_list)  # remove agent embeddings
-
-            cur_pig_num = env.get_pig_num()
-            cur_rabbit_num = env.get_rabbit_num()
-            group_num, mean_size, variance_size, max_size, group_view_num = env.group_monitor()
-            info = 'Round\t%d\ttimestep\t%d\tPigNum\t%d\tgroup_num\t%d\tmean_size\t%f\tmax_group_size\t%d' % \
-                   (r, t, cur_pig_num, group_num, mean_size, max_size)
-            info += '\tagent_num\t%d' % env.get_agent_num()
-
-            print info
-
-            log.write(info + '\n')
-            log.flush()
-
-        if argv.save_every_round and r % argv.save_every_round == 0:
-            if not os.path.exists(os.path.join(argv.save_dir, "round_%d" % r)):
-                os.mkdir(os.path.join(argv.save_dir, "round_%d" % r))
-            model_path = os.path.join(argv.save_dir, "round_%d" % r, "model.ckpt")
-            model.save(sess, model_path)
-            print 'model saved into ' + model_path
-        if video_flag:
-            images = [os.path.join(img_dir, ("%d.png" % i)) for i in range(argv.time_step + 1)]
-            env.make_video(images=images, outvid=os.path.join(argv.video_dir, "%d.avi" % r))
-    log.close()
+                images = [os.path.join(img_dir, ("%d.png" % i)) for i in range(argv.time_step + 1)]
+                env.make_video(images=images, outvid=os.path.join(argv.video_dir, "%d.avi" % r))
+        log.close()

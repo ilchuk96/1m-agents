@@ -11,7 +11,7 @@ import cv2
 # from model import inference, train
 
 class Env(object):
-    def __init__(self, args):
+    def __init__(self, args, fine_size):
         self.args = args
         self.h = args.height
         self.w = args.width
@@ -21,6 +21,7 @@ class Env(object):
         self.pig_num = 0
         self.rabbit_num = 0
         self.action_num = args.num_actions
+        self.fine_size = fine_size
 
         # Initialization
         self.view = []
@@ -63,7 +64,6 @@ class Env(object):
 
         self._init_property()
         self._init_group()
-
 
     def _init_property(self):
         self.property[-3] = [1, [0, 1, 0]]
@@ -1011,8 +1011,10 @@ def _get_view(pos):
 
 def get_fine(env, rewards):
     global env_id_group
+    global env_fine_size
 
     env_id_group = env.id_group
+    env_fine_size = env.fine_size
 
     for id, group in env_id_group.items():
         size = 0
@@ -1020,11 +1022,10 @@ def get_fine(env, rewards):
             size = len(group)
         min_group_size = 3
         max_group_size = 5
-        fine_size = 0.00125
         if size < min_group_size or max_group_size < size:
             if id in rewards.keys():
-                rewards[id] -= fine_size
+                rewards[id] -= env_fine_size
             else:
-                rewards[id] = -fine_size
+                rewards[id] = -env_fine_size
 
     return rewards
